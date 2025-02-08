@@ -15,6 +15,8 @@ export const env = createEnv({
     UPLOADTHING_TOKEN: z.string(),
 
     CLERK_SECRET_KEY: z.string(),
+    TURSO_DATABASE_URL: z.string(),
+    TURSO_AUTH_TOKEN: z.string(),
     REPLICATE_API_TOKEN: z.string(),
   },
 
@@ -41,6 +43,8 @@ export const env = createEnv({
     REPLICATE_API_TOKEN: process.env.REPLICATE_API_TOKEN,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+    TURSO_DATABASE_URL: process.env.TURSO_DATABASE_URL,
+    TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
