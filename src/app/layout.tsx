@@ -1,9 +1,14 @@
 import "~/styles/globals.css";
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
 
+import { fileRouter } from "~/app/api/uploadthing/core";
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
-
+import { ClerkProvider } from "@clerk/nextjs";
 import { TRPCReactProvider } from "~/trpc/react";
+import { Nav } from "./_components/nav";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -15,10 +20,17 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable}`}>
-      <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <NextSSRPlugin routerConfig={extractRouterConfig(fileRouter)} />
+      <html lang="en" className={`${GeistSans.variable} dark`}>
+        <body className="dark bg-white dark:bg-black">
+          <TRPCReactProvider>
+            <Nav />
+            {children}
+            <Toaster />
+          </TRPCReactProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
