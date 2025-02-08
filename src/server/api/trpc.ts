@@ -109,7 +109,6 @@ export const publicProcedure = t.procedure;
 
 export const protectedProcedure = t.procedure.use(async ({ next, ctx }) => {
   const user = await auth();
-  console.log("user", user);
   if (!user) throw new Error("Unauthorized");
   return next({ ctx: { ...ctx, user } });
 });

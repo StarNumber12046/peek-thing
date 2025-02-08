@@ -9,6 +9,7 @@ import { images } from "~/server/db/schema";
 
 import { Readable } from "stream";
 import { File } from "buffer"; // Node >= 20 supports `File` natively, otherwise use a polyfill.
+import posthog from "posthog-js";
 
 async function readableStreamToFile(
   stream: ReadableStream,
@@ -26,25 +27,12 @@ const replicate = new Replicate({
 });
 
 export const imagesRouter = createTRPCRouter({
-  addImage: protectedProcedure
-    .input(
-      z.object({
-        imageUrl: z.string(),
-        imageName: z.string(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      await ctx.db.insert(images).values({
-        url: input.imageUrl,
-        name: input.imageName,
-        userId: ctx.user.userId!,
-      });
-      console.log(`Image added: ${input.imageUrl} by ${ctx.user.userId}`);
-    }),
-
   getUserImages: protectedProcedure.query(async ({ ctx }) => {
     const images = await ctx.db.query.images.findMany({
       where: (images, { eq }) => eq(images.userId, ctx.user.userId!),
+    });
+    posthog.capture("user_images", {
+      images: images.length,
     });
     return images;
   }),
@@ -56,6 +44,13 @@ export const imagesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const image = await ctx.db.query.images.findFirst({
+        where: (images, { eq }) => eq(images.id, input.imageId),
+      });
+      if (!image) {
+        throw new Error("Image not found");
+      }
+      await utapi.deleteFiles([image.url.replace("https://utfs.io/f/", "")]);
       await ctx.db
         .delete(images)
         .where(
@@ -64,6 +59,7 @@ export const imagesRouter = createTRPCRouter({
             eq(images.userId, ctx.user.userId!),
           ),
         );
+      posthog.capture("image_deleted");
       console.log(`Image deleted: ${input.imageId}`);
     }),
 
@@ -80,6 +76,8 @@ export const imagesRouter = createTRPCRouter({
       if (!image) {
         throw new Error("Image not found");
       }
+      if (image.removedBgUrl)
+        throw new Error("Image background already removed");
 
       const output = (await replicate.run(
         // "lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1",
@@ -90,7 +88,6 @@ export const imagesRouter = createTRPCRouter({
           },
         },
       )) as ReadableStream;
-      console.log(output);
       // Fetch the image and convert to blob
       const file = await readableStreamToFile(
         output,
@@ -100,6 +97,10 @@ export const imagesRouter = createTRPCRouter({
 
       const files = await utapi.uploadFiles([file]);
 
+      posthog.capture("image_removed_bg", {
+        image: input.imageId,
+        removed_bg: files[0]?.data?.url,
+      });
       await ctx.db
         .update(images)
         .set({

@@ -9,6 +9,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Nav } from "./_components/nav";
 import { Toaster } from "sonner";
+import { CSPostHogProvider } from "./_providers/posthog";
 
 export const metadata: Metadata = {
   title: "Create T3 App",
@@ -24,11 +25,13 @@ export default function RootLayout({
       <NextSSRPlugin routerConfig={extractRouterConfig(fileRouter)} />
       <html lang="en" className={`${GeistSans.variable} dark`}>
         <body className="dark bg-white dark:bg-black">
-          <TRPCReactProvider>
-            <Nav />
-            {children}
-            <Toaster />
-          </TRPCReactProvider>
+          <CSPostHogProvider>
+            <TRPCReactProvider>
+              <Nav />
+              {children}
+              <Toaster />
+            </TRPCReactProvider>
+          </CSPostHogProvider>
         </body>
       </html>
     </ClerkProvider>
