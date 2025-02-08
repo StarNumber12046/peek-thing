@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import posthog from "posthog-js";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { UploadThingError } from "uploadthing/server";
 import { db } from "~/server/db";
@@ -27,7 +28,9 @@ export const fileRouter = {
 
       // If you throw, the user will not be able to upload
       if (!user || !user.userId) throw new UploadThingError("Unauthorized");
-
+      posthog.capture("image_upload", {
+        userId: user.userId,
+      });
       // Whatever is returned here is accessible in onUploadComplete as `metadata`
       return { userId: user.userId };
     })

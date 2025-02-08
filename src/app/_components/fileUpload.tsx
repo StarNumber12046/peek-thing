@@ -2,6 +2,9 @@
 import { UploadButton, useUploadThing } from "~/utils/uploadthing";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { createQueryClient } from "~/trpc/query-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePostHog } from "posthog-js/react";
 // inferred input off useUploadThing
 type Input = Parameters<typeof useUploadThing>;
 
@@ -56,30 +59,54 @@ function MakeToast() {
   );
 }
 
-export function UploaderButton({ userImagesQuery }: { userImagesQuery: any }) {
+export function UploaderButton() {
+  const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const removeBackgroundMutation = api.images.removeBackground.useMutation();
   const { inputProps, isUploading } = useUploadThingInputProps(
     "imageUploader",
     {
       onUploadBegin: () => {
+        posthog.capture("image_upload");
         MakeToast();
       },
       onClientUploadComplete: (data) => {
         toast.dismiss("uploading");
-        toast("Upload complete! Removing background...", { icon: "🎉" });
+        toast.info("Upload complete! Removing background...", {
+          icon: "🎉",
+          duration: 10000,
+          id: "removing",
+          richColors: true,
+        });
+        posthog.capture("image_upload_finish", {
+          images: data.length,
+        });
         const promises = data.map(async (element, index) => {
           await removeBackgroundMutation.mutateAsync({
             imageId: element.serverData.imageId!,
           });
-          toast(`Background removed for image ${index + 1}/${data.length}`);
-          userImagesQuery.refetch();
         });
-        Promise.all(promises);
+        Promise.all(promises).then(() => {
+          // userImagesQuery.refetch();
+          queryClient.invalidateQueries({
+            queryKey: [["images", "getUserImages"]],
+          });
+          toast.dismiss("removing");
+          toast.info("Background removed!", { icon: "🎉" });
+        });
+      },
+      onUploadError: (error: Error) => {
+        // Do something with the error.
+        posthog.capture("image_upload_error", {
+          // I could use sentry but I can't be bothered
+          error: error.message,
+        });
+        alert(`ERROR! ${error.message}`);
       },
     },
   );
   return (
-    <div className="absolute right-14 top-5 flex items-center">
+    <div className="flex items-center">
       <label htmlFor="upload-input" className="cursor-pointer">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -101,11 +128,8 @@ export function UploaderButton({ userImagesQuery }: { userImagesQuery: any }) {
   );
 }
 
-export function DefaultUploaderButton({
-  userImagesQuery,
-}: {
-  userImagesQuery: any;
-}) {
+export function DefaultUploaderButton() {
+  const queryClient = useQueryClient();
   const removeBackgroundMutation = api.images.removeBackground.useMutation();
   return (
     <UploadButton
@@ -124,8 +148,12 @@ export function DefaultUploaderButton({
           });
         });
         Promise.all(promises).then(() => {
-          userImagesQuery.refetch();
+          // userImagesQuery.refetch();
+          queryClient.invalidateQueries({
+            queryKey: [["images", "getUserImages"]],
+          });
           toast.dismiss("removing");
+          toast.info("Background removed!", { icon: "🎉" });
         });
       }}
       onUploadBegin={() => {

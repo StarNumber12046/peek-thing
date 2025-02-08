@@ -12,6 +12,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Delete, Download, Trash, Wallpaper } from "lucide-react";
 import { toast } from "sonner";
+import { usePostHog } from "posthog-js/react";
 
 type ImageCardProps = {
   image: {
@@ -49,11 +50,16 @@ const copyImageToClipboard = async (imageUrl: string) => {
 
 const BackgroundTypes = ["background", "remove-background"] as const;
 
+const openInNewTab = (url: string) => {
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
 export function ImageCard({
   image,
   onDelete,
   onRemoveBackground,
 }: ImageCardProps) {
+  const posthog = usePostHog();
   const deleteImage = api.images.deleteImage.useMutation();
   const removeBgMutation = api.images.removeBackground.useMutation();
   const [backgroundType, setBackgroundType] =
@@ -66,21 +72,34 @@ export function ImageCard({
       <div className="absolute ml-2 mt-2 hidden justify-between gap-2 group-hover:flex">
         <button
           className="rounded-md bg-red-500 p-2 text-white hover:bg-red-400"
-          onClick={() =>
-            deleteImage.mutateAsync({ imageId: image.id }).then(onDelete)
-          }
+          onClick={() => {
+            deleteImage.mutateAsync({ imageId: image.id }).then(() => {
+              setTimeout(() => {
+                posthog.capture("image_deleted", {
+                  imageId: image.id,
+                });
+              });
+              onDelete();
+            });
+          }}
         >
           <Trash />
         </button>
         <button
           className={`rounded-md p-2 text-white ${backgroundType === "background" ? "bg-green-500 hover:bg-green-400" : "bg-red-500 hover:bg-red-400"}`}
-          onClick={() =>
+          onClick={() => {
             setBackgroundType(
               backgroundType === "background"
                 ? "remove-background"
                 : "background",
-            )
-          }
+            );
+            setTimeout(() => {
+              posthog.capture("image_background_toggle", {
+                imageId: image.id,
+                backgroundType,
+              });
+            });
+          }}
         >
           <Wallpaper />
         </button>
@@ -99,25 +118,65 @@ export function ImageCard({
           <DropdownMenuLabel>Download</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem>
-            <a href={image.url} target="_blank" rel="noopener noreferrer">
+            <button
+              onClick={() => {
+                setTimeout(() => {
+                  posthog.capture("image_download", {
+                    imageId: image.id,
+                    backgroundType: "with-bg",
+                  });
+                });
+                openInNewTab(image.url);
+              }}
+            >
               With Background
-            </a>
+            </button>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <a href={image.url} target="_blank" rel="noopener noreferrer">
+            <button
+              onClick={() => {
+                setTimeout(() => {
+                  posthog.capture("image_download", {
+                    imageId: image.id,
+                    backgroundType: "without-bg",
+                  });
+                });
+                openInNewTab(image.removedBgUrl ?? image.url);
+              }}
+            >
               Without Background
-            </a>
+            </button>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>Copy</DropdownMenuLabel>
           <DropdownMenuItem>
-            <button onClick={() => copyImageToClipboard(image.url)}>
+            <button
+              onClick={() => {
+                setTimeout(() => {
+                  posthog.capture("image_copy", {
+                    imageId: image.id,
+                    backgroundType: "with-bg",
+                  });
+                });
+                copyImageToClipboard(image.url);
+              }}
+            >
               Copy Image
             </button>
           </DropdownMenuItem>
           {image.removedBgUrl && (
             <DropdownMenuItem>
-              <button onClick={() => copyImageToClipboard(image.removedBgUrl!)}>
+              <button
+                onClick={() => {
+                  setTimeout(() => {
+                    posthog.capture("image_copy", {
+                      imageId: image.id,
+                      backgroundType: "without-bg",
+                    });
+                  });
+                  copyImageToClipboard(image.removedBgUrl!);
+                }}
+              >
                 Copy Image Without Background
               </button>
             </DropdownMenuItem>
@@ -143,11 +202,16 @@ export function ImageCard({
       </p>
       {!image.removedBgUrl && (
         <button
-          onClick={() =>
+          onClick={() => {
+            setTimeout(() => {
+              posthog.capture("image_remove_bg", {
+                imageId: image.id,
+              });
+            });
             removeBgMutation
               .mutateAsync({ imageId: image.id })
-              .then(onRemoveBackground)
-          }
+              .then(onRemoveBackground);
+          }}
         >
           Remove BG
         </button>

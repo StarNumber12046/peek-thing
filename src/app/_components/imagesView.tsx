@@ -7,8 +7,7 @@ export function ImagesView() {
   const userImagesQuery = api.images.getUserImages.useQuery();
   return (
     <div>
-      <UploaderButton userImagesQuery={userImagesQuery} />
-      <DefaultUploaderButton userImagesQuery={userImagesQuery} />
+      <DefaultUploaderButton />
       <div className="flex flex-row flex-wrap items-center justify-center gap-4">
         {userImagesQuery.data?.map((image) => (
           <ImageCard
