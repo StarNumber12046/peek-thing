@@ -90,7 +90,7 @@ export function UploaderButton() {
             queryKey: [["images", "getUserImages"]],
           });
           toast.dismiss("removing");
-          toast.info("Background removed!", { icon: "🎉" });
+          toast.info("Background removed!", { icon: "🎉", richColors: true });
         })
         .catch((error) => {
           console.error(error);
@@ -100,7 +100,10 @@ export function UploaderButton() {
             error: error.message,
           });
           toast.dismiss("removing");
-          toast.error("Error removing background", { icon: "💥" });
+          toast.error("Error removing background", {
+            icon: "💥",
+            richColors: true,
+          });
         });
     },
     onUploadError: (error: Error) => {
@@ -162,7 +165,7 @@ export function DefaultUploaderButton() {
               queryKey: [["images", "getUserImages"]],
             });
             toast.dismiss("removing");
-            toast.info("Background removed!", { icon: "🎉" });
+            toast.info("Background removed!", { icon: "🎉", richColors: true });
           })
           .catch((error) => {
             console.error(error);
@@ -172,7 +175,10 @@ export function DefaultUploaderButton() {
               error: error.message,
             });
             toast.dismiss("removing");
-            toast.error("Error removing background", { icon: "💥" });
+            toast.error("Error removing background", {
+              icon: "💥",
+              richColors: true,
+            });
           });
       }}
       onUploadBegin={() => {

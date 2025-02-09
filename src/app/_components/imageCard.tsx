@@ -40,11 +40,11 @@ const copyImageToClipboard = async (imageUrl: string) => {
         "image/png": blob, // Convert to PNG if needed
       }),
     ]);
-    toast.success("Image copied to clipboard!");
+    toast.success("Image copied to clipboard!", { richColors: true });
   } catch (error) {
     console.error("Clipboard write failed, copying URL instead", error);
     await navigator.clipboard.writeText(imageUrl);
-    toast.success("Image URL copied to clipboard!");
+    toast.success("Image URL copied to clipboard!", { richColors: true });
   }
 };
 
@@ -91,7 +91,10 @@ export function ImageCard({
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                   error: error.message,
                 });
-                toast.error("Error deleting image", { icon: "💥" });
+                toast.error("Error deleting image", {
+                  icon: "💥",
+                  richColors: true,
+                });
               });
           }}
         >
@@ -230,7 +233,10 @@ export function ImageCard({
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
                   error: error.message,
                 });
-                toast.error("Error removing background", { icon: "💥" });
+                toast.error("Error removing background", {
+                  icon: "💥",
+                  richColors: true,
+                });
               });
           }}
         >
