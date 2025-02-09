@@ -17,15 +17,22 @@ const snowflake = SnowflakeId({
  */
 export const createTable = sqliteTableCreator((name) => `peek-thing_${name}`);
 
-export const images = createTable("images", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => snowflake.generate()),
-  url: text("url").notNull(),
-  userId: text("user_id").notNull(),
-  removedBgUrl: text("removed_bg_url"),
-  name: text("name").notNull(),
-  createdAt: int("created_at", { mode: "timestamp" })
-    .default(sql`(unixepoch())`)
-    .notNull(),
-});
+export const images = createTable(
+  "images",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => snowflake.generate()),
+    url: text("url").notNull(),
+    userId: text("user_id").notNull(),
+    removedBgUrl: text("removed_bg_url"),
+    name: text("name").notNull(),
+    createdAt: int("created_at", { mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+  },
+  (table) => ({
+    idIndex: index("name_idx").on(table.id),
+    userIdIndex: index("user_id_idx").on(table.userId),
+  }),
+);

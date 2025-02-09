@@ -2,7 +2,6 @@
 import { UploadButton, useUploadThing } from "~/utils/uploadthing";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { createQueryClient } from "~/trpc/query-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-js/react";
 // inferred input off useUploadThing
@@ -63,48 +62,56 @@ export function UploaderButton() {
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const removeBackgroundMutation = api.images.removeBackground.useMutation();
-  const { inputProps, isUploading } = useUploadThingInputProps(
-    "imageUploader",
-    {
-      onUploadBegin: () => {
-        posthog.capture("image_upload");
-        MakeToast();
-      },
-      onClientUploadComplete: (data) => {
-        toast.dismiss("uploading");
-        toast.info("Upload complete! Removing background...", {
-          icon: "🎉",
-          duration: 10000,
-          id: "removing",
-          richColors: true,
+  const { inputProps } = useUploadThingInputProps("imageUploader", {
+    onUploadBegin: () => {
+      posthog.capture("image_upload");
+      MakeToast();
+    },
+    onClientUploadComplete: (data) => {
+      toast.dismiss("uploading");
+      toast.info("Upload complete! Removing background...", {
+        icon: "🎉",
+        duration: 10000,
+        id: "removing",
+        richColors: true,
+      });
+      posthog.capture("image_upload_finish", {
+        images: data.length,
+      });
+      const promises = data.map(async (element) => {
+        await removeBackgroundMutation.mutateAsync({
+          imageId: element.serverData.imageId!,
         });
-        posthog.capture("image_upload_finish", {
-          images: data.length,
-        });
-        const promises = data.map(async (element, index) => {
-          await removeBackgroundMutation.mutateAsync({
-            imageId: element.serverData.imageId!,
-          });
-        });
-        Promise.all(promises).then(() => {
+      });
+      Promise.all(promises)
+        .then(() => {
           // userImagesQuery.refetch();
-          queryClient.invalidateQueries({
+          void queryClient.invalidateQueries({
             queryKey: [["images", "getUserImages"]],
           });
           toast.dismiss("removing");
           toast.info("Background removed!", { icon: "🎉" });
+        })
+        .catch((error) => {
+          console.error(error);
+          posthog.capture("image_upload_error", {
+            // I could use sentry but I can't be bothered
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+            error: error.message,
+          });
+          toast.dismiss("removing");
+          toast.error("Error removing background", { icon: "💥" });
         });
-      },
-      onUploadError: (error: Error) => {
-        // Do something with the error.
-        posthog.capture("image_upload_error", {
-          // I could use sentry but I can't be bothered
-          error: error.message,
-        });
-        alert(`ERROR! ${error.message}`);
-      },
     },
-  );
+    onUploadError: (error: Error) => {
+      // Do something with the error.
+      posthog.capture("image_upload_error", {
+        // I could use sentry but I can't be bothered
+        error: error.message,
+      });
+      alert(`ERROR! ${error.message}`);
+    },
+  });
   return (
     <div className="flex items-center">
       <label htmlFor="upload-input" className="cursor-pointer">
@@ -130,6 +137,7 @@ export function UploaderButton() {
 
 export function DefaultUploaderButton() {
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const removeBackgroundMutation = api.images.removeBackground.useMutation();
   return (
     <UploadButton
@@ -142,19 +150,30 @@ export function DefaultUploaderButton() {
           id: "removing",
           richColors: true,
         });
-        const promises = data.map(async (element, index) => {
+        const promises = data.map(async (element) => {
           await removeBackgroundMutation.mutateAsync({
             imageId: element.serverData.imageId!,
           });
         });
-        Promise.all(promises).then(() => {
-          // userImagesQuery.refetch();
-          queryClient.invalidateQueries({
-            queryKey: [["images", "getUserImages"]],
+        Promise.all(promises)
+          .then(async () => {
+            // userImagesQuery.refetch();
+            await queryClient.invalidateQueries({
+              queryKey: [["images", "getUserImages"]],
+            });
+            toast.dismiss("removing");
+            toast.info("Background removed!", { icon: "🎉" });
+          })
+          .catch((error) => {
+            console.error(error);
+            posthog.capture("image_upload_error", {
+              // I could use sentry but I can't be bothered
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+              error: error.message,
+            });
+            toast.dismiss("removing");
+            toast.error("Error removing background", { icon: "💥" });
           });
-          toast.dismiss("removing");
-          toast.info("Background removed!", { icon: "🎉" });
-        });
       }}
       onUploadBegin={() => {
         MakeToast();

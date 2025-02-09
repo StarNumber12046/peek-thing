@@ -1,6 +1,6 @@
 "use client";
 import { api } from "~/trpc/react";
-import { DefaultUploaderButton, UploaderButton } from "./fileUpload";
+import { DefaultUploaderButton } from "./fileUpload";
 import { ImageCard } from "./imageCard";
 
 export function ImagesView() {

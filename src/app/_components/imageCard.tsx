@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuItem,
 } from "~/components/ui/dropdown-menu";
-import { Delete, Download, Trash, Wallpaper } from "lucide-react";
+import { Download, Trash, Wallpaper } from "lucide-react";
 import { toast } from "sonner";
 import { usePostHog } from "posthog-js/react";
 
@@ -48,8 +48,9 @@ const copyImageToClipboard = async (imageUrl: string) => {
   }
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const BackgroundTypes = ["background", "remove-background"] as const;
-
+type BackgroundType = (typeof BackgroundTypes)[number];
 const openInNewTab = (url: string) => {
   window.open(url, "_blank", "noopener,noreferrer");
 };
@@ -63,7 +64,7 @@ export function ImageCard({
   const deleteImage = api.images.deleteImage.useMutation();
   const removeBgMutation = api.images.removeBackground.useMutation();
   const [backgroundType, setBackgroundType] =
-    useState<(typeof BackgroundTypes)[number]>("remove-background");
+    useState<BackgroundType>("remove-background");
   return (
     <div
       className="group rounded-md border border-neutral-500 p-3 dark:border-neutral-800"
@@ -73,14 +74,25 @@ export function ImageCard({
         <button
           className="rounded-md bg-red-500 p-2 text-white hover:bg-red-400"
           onClick={() => {
-            deleteImage.mutateAsync({ imageId: image.id }).then(() => {
-              setTimeout(() => {
-                posthog.capture("image_deleted", {
-                  imageId: image.id,
+            deleteImage
+              .mutateAsync({ imageId: image.id })
+              .then(() => {
+                setTimeout(() => {
+                  posthog.capture("image_deleted", {
+                    imageId: image.id,
+                  });
                 });
+                onDelete();
+              })
+              .catch((error) => {
+                console.error(error);
+                posthog.capture("image_delete_error", {
+                  // I could use sentry but I can't be bothered
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                  error: error.message,
+                });
+                toast.error("Error deleting image", { icon: "💥" });
               });
-              onDelete();
-            });
           }}
         >
           <Trash />
@@ -158,7 +170,7 @@ export function ImageCard({
                     backgroundType: "with-bg",
                   });
                 });
-                copyImageToClipboard(image.url);
+                void copyImageToClipboard(image.url);
               }}
             >
               Copy Image
@@ -174,7 +186,7 @@ export function ImageCard({
                       backgroundType: "without-bg",
                     });
                   });
-                  copyImageToClipboard(image.removedBgUrl!);
+                  void copyImageToClipboard(image.removedBgUrl!);
                 }}
               >
                 Copy Image Without Background
@@ -210,7 +222,16 @@ export function ImageCard({
             });
             removeBgMutation
               .mutateAsync({ imageId: image.id })
-              .then(onRemoveBackground);
+              .then(onRemoveBackground)
+              .catch((error) => {
+                console.error(error);
+                posthog.capture("image_remove_bg_error", {
+                  // I could use sentry but I can't be bothered
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+                  error: error.message,
+                });
+                toast.error("Error removing background", { icon: "💥" });
+              });
           }}
         >
           Remove BG

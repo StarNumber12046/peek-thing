@@ -105,9 +105,9 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * guarantee that a user querying is authorized, but you can still access user session data if they
  * are logged in.
  */
-export const publicProcedure = t.procedure;
+export const publicProcedure = t.procedure.use(timingMiddleware);
 
-export const protectedProcedure = t.procedure.use(async ({ next, ctx }) => {
+export const protectedProcedure = publicProcedure.use(async ({ next, ctx }) => {
   const user = await auth();
   if (!user) throw new Error("Unauthorized");
   return next({ ctx: { ...ctx, user } });

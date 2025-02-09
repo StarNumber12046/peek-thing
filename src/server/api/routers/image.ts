@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { utapi } from "~/utils/ut_server";
@@ -7,7 +6,6 @@ import Replicate from "replicate";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { images } from "~/server/db/schema";
 
-import { Readable } from "stream";
 import { File } from "buffer"; // Node >= 20 supports `File` natively, otherwise use a polyfill.
 import posthog from "posthog-js";
 
