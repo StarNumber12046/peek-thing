@@ -84,7 +84,11 @@ export function Combobox({
         <PopoverContent className="w-72 max-w-sm p-0">
           <Command
             filter={(value, search) => {
-              if (value.includes(search)) return 1;
+              const normalizedValue = value.toLowerCase();
+              const normalizedSearch = search.toLowerCase();
+              if (normalizedValue === normalizedSearch) return 1;
+              if (normalizedValue.startsWith(normalizedSearch)) return 0.8;
+              if (normalizedValue.includes(normalizedSearch)) return 0.6;
               return 0;
             }}
             // shouldFilter={true}
