@@ -2,7 +2,6 @@
 import { UploadButton, useUploadThing } from "~/utils/uploadthing";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-js/react";
 // inferred input off useUploadThing
 type Input = Parameters<typeof useUploadThing>;

@@ -208,7 +208,6 @@ export function ImageCard({
         height={250}
         width={250}
         style={{ width: 250, height: 250, objectFit: "contain" }}
-        objectFit="cover"
         className="rounded-md"
       />
       <p>
