@@ -117,7 +117,11 @@ export function Combobox({
                       value={option.label}
                       onSelect={(_currentValue) => {
                         if (onChange) {
-                          if (mode === "multiple" && Array.isArray(selected)) {
+                          if (mode === "multiple") {
+                            if (!Array.isArray(selected)) {
+                              console.error("Selected value must be an array in multiple mode");
+                              return;
+                            }
                             onChange(
                               selected.includes(option.value)
                                 ? selected.filter(
@@ -126,6 +130,10 @@ export function Combobox({
                                 : [...selected, option.value],
                             );
                           } else {
+                            if (Array.isArray(selected)) {
+                              console.error("Selected value must not be an array in single mode");
+                              return;
+                            }
                             onChange(option.value);
                           }
                         }
