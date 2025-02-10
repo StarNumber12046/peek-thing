@@ -1,36 +1,34 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { utapi } from "~/utils/ut_server";
-import Replicate from "replicate";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { imageTags, tags } from "~/server/db/schema";
-
-import { File } from "buffer"; // Node >= 20 supports `File` natively, otherwise use a polyfill.
-import posthog from "posthog-js";
-import { create } from "domain";
-
-async function readableStreamToFile(
-  stream: ReadableStream,
-  filename: string,
-  mimeType: string,
-): Promise<File> {
-  const response = new Response(stream);
-  const blob = await response.blob(); // Convert stream to Blob
-  const buffer = Buffer.from(await blob.arrayBuffer()); // Convert Blob to Buffer
-  return new File([buffer], filename, { type: mimeType });
-}
 
 export const tagsRouter = createTRPCRouter({
   getUserTags: protectedProcedure.query(async ({ ctx }) => {
     const tags = await ctx.db.query.tags.findMany({
       where: (tags, { eq }) => eq(tags.userId, ctx.user.userId!),
     });
-    posthog.capture("user_tags", {
-      tags: tags.length,
-    });
+
     return tags;
   }),
+
+  getImageTags: protectedProcedure
+    .input(
+      z.object({
+        imageId: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const tags = await ctx.db.query.imageTags.findMany({
+        where: (imageTags, { eq }) => eq(imageTags.imageId, input.imageId),
+        with: {
+          tag: true,
+        },
+      });
+
+      return tags.map((tagMapping) => tagMapping.tag);
+    }),
 
   createTag: protectedProcedure
     .input(
@@ -46,12 +44,12 @@ export const tagsRouter = createTRPCRouter({
           userId: ctx.user.userId!,
         })
         .returning({ id: tags.id, name: tags.name });
-      posthog.capture("tag_created");
       console.log(`Tag created: ${tag?.id}`);
+
       return tag;
     }),
 
-  deleteImage: protectedProcedure
+  deleteTag: protectedProcedure
     .input(
       z.object({
         tagId: z.string(),
@@ -63,7 +61,6 @@ export const tagsRouter = createTRPCRouter({
         .where(
           and(eq(tags.id, input.tagId), eq(tags.userId, ctx.user.userId!)),
         );
-      posthog.capture("tag_deleted");
       console.log(`Tag deleted: ${input.tagId}`);
     }),
 
@@ -101,7 +98,6 @@ export const tagsRouter = createTRPCRouter({
           imageId: imageTags.imageId,
           tagId: imageTags.tagId,
         });
-      posthog.capture("image_tagged", { tagId: input.tagId });
       return result;
     }),
 });

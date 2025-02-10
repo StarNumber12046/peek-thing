@@ -60,6 +60,7 @@ export function ImageCard({
   onDelete,
   onRemoveBackground,
 }: ImageCardProps) {
+  const [tags] = api.tags.getImageTags.useSuspenseQuery({ imageId: image.id });
   const posthog = usePostHog();
   const deleteImage = api.images.deleteImage.useMutation();
   const removeBgMutation = api.images.removeBackground.useMutation();
@@ -210,10 +211,14 @@ export function ImageCard({
         style={{ width: 250, height: 250, objectFit: "contain" }}
         className="rounded-md"
       />
+      {}
       <p>
         {image.name.slice(0, 25)}
         {image.name.length > 25 && "..."}
       </p>
+      {tags.map((tag) => (
+        <p key={tag.id}>{tag.name}</p>
+      ))}
       {!image.removedBgUrl && (
         <button
           onClick={() => {

@@ -29,9 +29,9 @@ export const images = createTable(
     createdAt: int("created_at", { mode: "timestamp" })
       .default(sql`(unixepoch())`)
       .notNull(),
-    updatedAt: int("update_at", { mode: "timestamp" })
-      .default(sql`(unixepoch())`)
-      .$onUpdate(() => sql`unixepoch()`),
+    updatedAt: int("update_at", { mode: "timestamp" }).$onUpdate(
+      () => new Date(Date.now()),
+    ),
   },
   (table) => ({
     idIndex: index("name_idx").on(table.id),
@@ -40,15 +40,17 @@ export const images = createTable(
 );
 
 export const tags = createTable("tags", {
-  id: text("id").primaryKey().$defaultFn(snowflake.generate),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => snowflake.generate()),
   name: text("name").notNull(),
   userId: text("user_id").notNull(),
   createdAt: int("created_at", { mode: "timestamp" })
     .default(sql`(unixepoch())`)
     .notNull(),
-  updatedAt: int("update_at", { mode: "timestamp" })
-    .default(sql`(unixepoch())`)
-    .$onUpdate(() => sql`unixepoch()`),
+  updatedAt: int("update_at", { mode: "timestamp" }).$onUpdate(
+    () => new Date(Date.now()),
+  ),
 });
 
 export const imageTags = createTable(
