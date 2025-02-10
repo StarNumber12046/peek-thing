@@ -84,7 +84,11 @@ export function Combobox({
         <PopoverContent className="w-72 max-w-sm p-0">
           <Command
             filter={(value, search) => {
-              if (value.includes(search)) return 1;
+              const normalizedValue = value.toLowerCase();
+              const normalizedSearch = search.toLowerCase();
+              if (normalizedValue === normalizedSearch) return 1;
+              if (normalizedValue.startsWith(normalizedSearch)) return 0.8;
+              if (normalizedValue.includes(normalizedSearch)) return 0.6;
               return 0;
             }}
             // shouldFilter={true}
@@ -117,7 +121,11 @@ export function Combobox({
                       value={option.label}
                       onSelect={(_currentValue) => {
                         if (onChange) {
-                          if (mode === "multiple" && Array.isArray(selected)) {
+                          if (mode === "multiple") {
+                            if (!Array.isArray(selected)) {
+                              console.error("Selected value must be an array in multiple mode");
+                              return;
+                            }
                             onChange(
                               selected.includes(option.value)
                                 ? selected.filter(
@@ -126,6 +134,10 @@ export function Combobox({
                                 : [...selected, option.value],
                             );
                           } else {
+                            if (Array.isArray(selected)) {
+                              console.error("Selected value must not be an array in single mode");
+                              return;
+                            }
                             onChange(option.value);
                           }
                         }

@@ -69,6 +69,7 @@ export const imageTags = createTable(
   (table) => ({
     imageIdx: index("image_tags_image_idx").on(table.imageId),
     tagIdx: index("image_tags_tag_idx").on(table.tagId),
+    pk: primaryKey({ columns: [table.imageId, table.tagId] }),
   }),
 );
 
