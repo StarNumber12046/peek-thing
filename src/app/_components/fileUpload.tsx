@@ -59,7 +59,7 @@ function MakeToast() {
 }
 
 export function UploaderButton() {
-  const queryClient = useQueryClient();
+  const utils = api.useUtils();
   const posthog = usePostHog();
   const removeBackgroundMutation = api.images.removeBackground.useMutation();
   const { inputProps } = useUploadThingInputProps("imageUploader", {
@@ -85,10 +85,7 @@ export function UploaderButton() {
       });
       Promise.all(promises)
         .then(() => {
-          // userImagesQuery.refetch();
-          void queryClient.invalidateQueries({
-            queryKey: [["images", "getUserImages"]],
-          });
+          void utils.images.getUserImages.invalidate();
           toast.dismiss("removing");
           toast.info("Background removed!", { icon: "🎉", richColors: true });
         })
@@ -111,6 +108,11 @@ export function UploaderButton() {
       posthog.capture("image_upload_error", {
         // I could use sentry but I can't be bothered
         error: error.message,
+      });
+      toast.dismiss("uploading");
+      toast.error("Failed to upload image", {
+        icon: "💥",
+        richColors: true,
       });
       alert(`ERROR! ${error.message}`);
     },
@@ -139,7 +141,7 @@ export function UploaderButton() {
 }
 
 export function DefaultUploaderButton() {
-  const queryClient = useQueryClient();
+  const utils = api.useUtils();
   const posthog = usePostHog();
   const removeBackgroundMutation = api.images.removeBackground.useMutation();
   return (
@@ -161,9 +163,7 @@ export function DefaultUploaderButton() {
         Promise.all(promises)
           .then(async () => {
             // userImagesQuery.refetch();
-            await queryClient.invalidateQueries({
-              queryKey: [["images", "getUserImages"]],
-            });
+            await utils.images.getUserImages.invalidate();
             toast.dismiss("removing");
             toast.info("Background removed!", { icon: "🎉", richColors: true });
           })

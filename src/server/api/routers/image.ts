@@ -49,6 +49,10 @@ export const imagesRouter = createTRPCRouter({
         throw new Error("Image not found");
       }
       await utapi.deleteFiles([image.url.replace("https://utfs.io/f/", "")]);
+      if (image.removedBgUrl)
+        await utapi.deleteFiles([
+          image.removedBgUrl.replace("https://utfs.io/f/", ""),
+        ]);
       await ctx.db
         .delete(images)
         .where(
