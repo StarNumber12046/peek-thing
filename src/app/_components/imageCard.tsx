@@ -13,6 +13,7 @@ import {
 import { Download, Trash, Wallpaper } from "lucide-react";
 import { toast } from "sonner";
 import { usePostHog } from "posthog-js/react";
+import { Badge } from "~/components/ui/badge";
 
 type ImageCardProps = {
   image: {
@@ -60,6 +61,7 @@ export function ImageCard({
   onDelete,
   onRemoveBackground,
 }: ImageCardProps) {
+  const { data } = api.tags.getImageTags.useQuery({ imageId: image.id });
   const posthog = usePostHog();
   const deleteImage = api.images.deleteImage.useMutation();
   const removeBgMutation = api.images.removeBackground.useMutation();
@@ -210,10 +212,18 @@ export function ImageCard({
         style={{ width: 250, height: 250, objectFit: "contain" }}
         className="rounded-md"
       />
+      {}
       <p>
         {image.name.slice(0, 25)}
         {image.name.length > 25 && "..."}
       </p>
+      <div
+        className="flex cursor-pointer flex-row flex-wrap gap-2"
+        onClick={console.log}
+      >
+        {data?.slice(0, 5).map((tag) => <Badge key={tag.id}>{tag.name}</Badge>)}
+        {(data?.length ?? 0) > 5 && <Badge>+{(data?.length ?? 0) - 5}</Badge>}
+      </div>
       {!image.removedBgUrl && (
         <button
           onClick={() => {

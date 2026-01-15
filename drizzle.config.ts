@@ -10,5 +10,5 @@ export default {
     url: env.TURSO_DATABASE_URL,
     authToken: env.TURSO_AUTH_TOKEN,
   },
-  tablesFilter: ["nextagram_*"],
+  tablesFilter: ["peek-thing_*"],
 } satisfies Config;
